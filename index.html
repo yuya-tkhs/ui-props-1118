@@ -106,6 +106,8 @@ body.standalone-ios .sb{visibility:hidden}
 .cancel-banner b{color:var(--err);font-size:18px;display:block}
 .cancel-banner span{font-size:14px;color:var(--ink);display:block;margin-top:6px;line-height:1.5}
 .cancel-banner.on{display:block;animation:drop .35s ease-out}
+.screen.canceled .big-ok,.screen.canceled .amt,.screen.canceled .pts,.screen.canceled .t{opacity:.25;filter:grayscale(1);transition:opacity .3s}
+html,body{touch-action:manipulation}
 
 /* 通知バナー */
 .notif{position:absolute;left:10px;right:10px;top:-140px;background:rgba(245,245,247,.97);border-radius:22px;padding:14px 16px;display:flex;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,.22);transition:top .45s cubic-bezier(.2,.9,.3,1.1);z-index:5}
@@ -233,7 +235,7 @@ body.standalone-ios .sb{visibility:hidden}
     <div class="avatar">西</div>
     <div class="to" data-name="sendTo"></div>
     <div class="amount num" data-v="sendAmount"></div>
-    <div class="msg">割り勘分です。ごちそうさまでした！</div>
+    <div class="msg">割り勘分です</div>
     <button class="cta" data-go="P2">送る</button>
   </div>
 </section>
@@ -335,7 +337,7 @@ body.standalone-ios .sb{visibility:hidden}
   </div>
   <div class="tabbar"><div class="on">ホーム</div><div>お得</div><div>支払う</div><div>履歴</div><div>アカウント</div></div>
   <div class="notif" id="notif" data-notif>
-    <div class="ap">F</div>
+    <div class="ap">筋</div>
     <div style="flex:1"><div class="h"><b data-name="fit"></b><span>今</span></div>
       <div class="b">無料期間が終了しました。プレミアムプラン <span class="num" data-v="fitPrice"></span> のお支払いが完了しました</div></div>
   </div>
@@ -361,7 +363,6 @@ body.standalone-ios .sb{visibility:hidden}
       <div class="cat">マネー</div>
       <h1>老後のお金、足りる？ 「自分は大丈夫」と思う人ほど危ない理由</h1>
       <div class="date">2026年11月18日 7:00</div>
-      <div class="ph"></div>
       <p>物価の上昇が続くなか、老後の生活費への不安を感じる人が増えている。将来に向けて何から始めればよいのか。</p>
       <div class="cmp">
         <div class="h">NISA と iDeCo のちがい</div>
@@ -395,10 +396,11 @@ body.standalone-ios .sb{visibility:hidden}
 
 <div id="hot"></div>
 <div id="menu">
-  <h2>本を選ぶ（撮る順）</h2>
+  <h2>本を選ぶ（撮る順）　※メニュー＝2本指タップ</h2>
   <button data-open="K1">居③ 投資アプリ<small>K1</small></button>
   <button data-open="P1">居① 送金 → 送りました<small>P1</small></button>
   <button data-open="Q1">居④ 支払い<small>Q1</small></button>
+  <div style="font-size:13px;color:#aaa;margin:2px 4px 8px">完了→取消：完了画面で右上をタップすると取消が出る</div>
   <div class="seg" id="mode"><button data-mode="ok">完了</button><button data-mode="fail">失敗</button><button data-mode="cancel">完了→取消</button></div>
   <button data-open="F1">カ① 残高＋通知<small>F1・右上タップで通知</small></button>
   <button data-open="Y1">カ① ヨシノのサブスク（2台目）<small>Y1</small></button>
@@ -420,11 +422,11 @@ const CONFIG = {
     sendTo: '西山 先輩',             // 送金相手
     sendToShort: '西山',
     store: '大衆酒場 ひのき',        // ★架空の店名
-    fit: 'FitLoop',                  // ★架空の筋トレアプリ
+    fit: 'キントレ日和',              // ★架空の筋トレアプリ（FitLoop は実在のため変更）
     video: 'ミルフル',               // ★架空の動画配信
     music: 'オトノハ',               // ★架空の音楽配信
     news: 'マネー新報',              // ★架空のニュース
-    brand: 'MAISON ORNE',            // ★架空のブランド
+    brand: 'ATELIER KIRI',           // ★架空のブランド（ORNE は実在の鞄ラインと重なるため変更）
   },
   values: {
     investTotal: '¥486,320', investGain: '+¥38,120（+8.5%）',
@@ -478,12 +480,14 @@ function renderSeg() {
 }
 
 let current = null, timers = [];
+function cancelNow() { document.getElementById('cancel').classList.add('on'); document.querySelector('[data-id=Q4a]').classList.add('canceled'); }
 function show(id) {
   timers.forEach(clearTimeout); timers = [];
   document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.dataset.id === id));
   current = id;
   const n = document.getElementById('notif'); n.classList.remove('on');
   document.getElementById('cancel').classList.remove('on');
+  document.querySelectorAll('.screen.canceled').forEach(x => x.classList.remove('canceled'));
   document.querySelector('meta[name=theme-color]').content = ['Q1', 'F1'].includes(id) ? getComputedStyle(document.documentElement).getPropertyValue('--brand').trim() : '#ffffff';
   const sc = document.querySelector('.screen.on .body'); if (sc) sc.scrollTop = 0;
 }
@@ -494,7 +498,7 @@ document.addEventListener('click', e => {
     show('Q3');
     timers.push(setTimeout(() => {
       if (mode === 'fail') show('Q4b');
-      else { show('Q4a'); if (mode === 'cancel') timers.push(setTimeout(() => document.getElementById('cancel').classList.add('on'), 2600)); }
+      else show('Q4a');   // 取消は自動で出さない（右上タップで出す）
     }, 1300));
     return;
   }
@@ -505,16 +509,28 @@ document.addEventListener('click', e => {
   // カ①：右上をタップで通知
   if (current === 'F1') { const t = e.touches ? e.touches[0] : e; if (t.clientX > innerWidth - 90 && t.clientY < 140) document.getElementById('notif').classList.add('on'); }
   // 居④（完了→取消）：右上タップでも取消を出せる
-  if (current === 'Q4a') { const t = e; if (t.clientX > innerWidth - 90 && t.clientY < 140) document.getElementById('cancel').classList.add('on'); }
+  if (current === 'Q4a' && mode === 'cancel') { const t = e; if (t.clientX > innerWidth - 90 && t.clientY < 140) cancelNow(); }
 });
 
-// 左上長押し → メニュー
-let lp = null;
+// メニューの出し方：①2本指タップ（どこでも） ②左上を3回タップ ③左上長押し0.7秒
+let lp = null, taps = [], two = null;
 const hot = document.getElementById('hot');
-const start = () => { lp = setTimeout(() => menu(true), 700); };
-const stop = () => clearTimeout(lp);
-hot.addEventListener('touchstart', start, { passive: true }); hot.addEventListener('touchend', stop); hot.addEventListener('touchmove', stop);
-hot.addEventListener('mousedown', start); hot.addEventListener('mouseup', stop);
+const menuOpen = () => document.getElementById('menu').classList.contains('on');
+hot.addEventListener('pointerdown', e => {
+  lp = setTimeout(() => menu(true), 700);
+  const now = Date.now(); taps = taps.filter(t => now - t < 600); taps.push(now);
+  if (taps.length >= 3) { taps = []; clearTimeout(lp); menu(true); }
+});
+['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => hot.addEventListener(ev, () => clearTimeout(lp)));
+hot.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('touchstart', e => {
+  if (e.touches.length === 2) { two = { t: Date.now(), x: e.touches[0].clientX, y: e.touches[0].clientY }; e.preventDefault(); }
+}, { passive: false });
+document.addEventListener('touchend', e => {
+  if (two && e.touches.length === 0) { if (Date.now() - two.t < 500 && !menuOpen()) menu(true); two = null; }
+});
+document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('contextmenu', e => e.preventDefault());
 function menu(on) { document.getElementById('menu').classList.toggle('on', on); renderSeg(); }
 
 // iPhone のホーム画面から起動 → 本物のステータスバーが出るので偽物を隠す
@@ -538,7 +554,7 @@ const t0 = params.get('theme') || store.get('theme', null);
 if (t0) document.documentElement.style.setProperty('--brand', t0);
 const sid = params.get('s');
 if (sid === 'F2') { show('F1'); document.getElementById('notif').classList.add('on'); }
-else if (sid === 'Q5') { show('Q4a'); document.getElementById('cancel').classList.add('on'); }
+else if (sid === 'Q5') { show('Q4a'); cancelNow(); }
 else show(sid || store.get('last', 'K1'));
 document.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => store.set('last', b.dataset.open)));
 if (exportMode) { document.getElementById('hot').remove(); document.querySelectorAll('.notif,.cancel-banner,.big-ok').forEach(e => e.style.animation = 'none'); document.getElementById('notif').style.transition = 'none'; }
