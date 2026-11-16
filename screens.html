@@ -396,11 +396,11 @@ html,body{touch-action:manipulation}
 
 <div id="hot"></div>
 <div id="menu">
-  <h2>本を選ぶ（撮る順）　※メニュー＝2本指タップ　<span style="color:#fff">v3</span></h2>
+  <h2>本を選ぶ（撮る順）　※メニュー＝2本指タップ　<span style="color:#fff">v4</span></h2>
   <button data-open="K1">居③ 投資アプリ<small>K1</small></button>
   <button data-open="P1">居① 送金 → 送りました<small>P1</small></button>
-  <button data-open="Q1">居④ 支払い<small>Q1</small></button>
-  <div style="font-size:13px;color:#aaa;margin:2px 4px 8px">完了→取消：完了画面で右上をタップすると取消が出る</div>
+  <button data-open="Q1">居④ 支払い<small id="modeLabel">Q1</small></button>
+  <div style="font-size:13px;color:#aaa;margin:2px 4px 8px">完了→取消：完了画面のどこかをタップすると取消が出る</div>
   <div class="seg" id="mode"><button data-mode="ok">完了</button><button data-mode="fail">失敗</button><button data-mode="cancel">完了→取消</button></div>
   <button data-open="F1">カ① 残高＋通知<small>F1・右上タップで通知</small></button>
   <button data-open="Y1">カ① ヨシノのサブスク（2台目）<small>Y1</small></button>
@@ -477,6 +477,7 @@ function renderSeg() {
   document.getElementById('theme').innerHTML = CONFIG.themes.map(([n, h]) =>
     `<button data-theme="${h}" class="${cur.toLowerCase() === h.toLowerCase() ? 'sel' : ''}" style="border-bottom:4px solid ${h}">${n}</button>`).join('');
   document.querySelectorAll('#mode button').forEach(b => b.classList.toggle('sel', b.dataset.mode === mode));
+  const ml = document.getElementById('modeLabel'); if (ml) ml.textContent = 'いま：' + ({ ok: '完了', fail: '失敗', cancel: '完了→取消' })[mode];
 }
 
 let current = null, timers = [];
@@ -509,7 +510,7 @@ document.addEventListener('click', e => {
   // カ①：右上をタップで通知
   if (current === 'F1') { const t = e.touches ? e.touches[0] : e; if (t.clientX > innerWidth - 90 && t.clientY < 140) document.getElementById('notif').classList.add('on'); }
   // 居④（完了→取消）：右上タップでも取消を出せる
-  if (current === 'Q4a' && mode === 'cancel') { const t = e; if (t.clientX > innerWidth - 90 && t.clientY < 140) cancelNow(); }
+  if (current === 'Q4a' && mode === 'cancel' && !e.target.closest('#menu')) { cancelNow(); }
 });
 
 // メニューの出し方：①2本指タップ（どこでも） ②左上を3回タップ ③左上長押し0.7秒
