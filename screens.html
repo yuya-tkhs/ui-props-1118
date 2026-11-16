@@ -396,7 +396,7 @@ html,body{touch-action:manipulation}
 
 <div id="hot"></div>
 <div id="menu">
-  <h2>本を選ぶ（撮る順）　※メニュー＝2本指タップ　<span style="color:#fff">v4</span></h2>
+  <h2>本を選ぶ（撮る順）　※メニュー＝2本指タップ　<span style="color:#fff">v5</span></h2>
   <button data-open="K1">居③ 投資アプリ<small>K1</small></button>
   <button data-open="P1">居① 送金 → 送りました<small>P1</small></button>
   <button data-open="Q1">居④ 支払い<small id="modeLabel">Q1</small></button>
@@ -493,16 +493,19 @@ function show(id) {
   const sc = document.querySelector('.screen.on .body'); if (sc) sc.scrollTop = 0;
 }
 
-document.addEventListener('click', e => {
-  const go = e.target.closest('[data-go]'); if (go) { show(go.dataset.go); return; }
-  if (e.target.closest('[data-pay]')) {
+function pay() {
     show('Q3');
     timers.push(setTimeout(() => {
       if (mode === 'fail') show('Q4b');
-      else show('Q4a');   // 取消は自動で出さない（右上タップで出す）
+      else show('Q4a');   // 取消は自動で出さない（タップで出す）
     }, 1300));
-    return;
-  }
+}
+document.addEventListener('click', e => {
+  if (e.target.closest('#menu') || e.target.id === 'fsbtn') { /* メニュー内は下で処理 */ }
+  else if (current === 'P1') { show('P2'); return; }          // 居①：どこをタップしても送金完了へ
+  else if (current === 'Q1') { show('Q2'); return; }          // 居④：どこをタップしても支払い確認へ
+  else if (current === 'Q2') { pay(); return; }               // 居④：どこをタップしても支払う
+  const go = e.target.closest('[data-go]'); if (go) { show(go.dataset.go); return; }
   const op = e.target.closest('[data-open]'); if (op) { menu(false); show(op.dataset.open); return; }
   const md = e.target.closest('[data-mode]'); if (md) { mode = md.dataset.mode; store.set('mode', mode); renderSeg(); return; }
   const th = e.target.closest('[data-theme]'); if (th) { setTheme(th.dataset.theme); return; }
