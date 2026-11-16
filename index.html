@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="撮影画面">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#ffffff">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>撮影画面 11/18</title>
+<!-- 映像撮影用の小道具画面です。実在のサービスではありません（架空の名前・金額）。
+
+  撮影用の小道具画面（2026-11-18 楽天証券様 TikTok「どっち派」）
+  ・左上を長押し（0.7秒）→ 本ごとのメニュー。選び直すと最初の状態に戻る
+  ・?s=ID で画面を直接開く（画像の書き出し用）。ID：K1 P1 P2 Q1 Q2 Q4a Q4b Q5 F1 F2 Y1 N1 E1
+  ・名前・金額は下の CONFIG を書き換える（★＝仮）
+-->
+<style>
+:root{
+  --brand:#DC143C;          /* 決済アプリの色。メニューで切替 */
+  --brand-ink:#ffffff;
+  --ink:#1a1a1a; --sub:#6b6b6b; --line:#e6e6e6; --bg:#f4f5f7; --card:#ffffff;
+  --ok:#16a34a; --warn:#d97706; --err:#dc2626;
+  --invest:#0f766e;         /* 投資アプリ（赤を避ける） */
+  --font: -apple-system, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", Meiryo, sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#000}
+body{font-family:var(--font);color:var(--ink);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overflow:hidden;font-feature-settings:"palt" 0}
+#app{position:fixed;inset:0;background:var(--bg);overflow:hidden}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;background:var(--bg)}
+.screen.on{display:flex}
+.body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.num{font-feature-settings:"tnum" 1;letter-spacing:.01em}
+
+/* 偽ステータスバー（画像・Android 全画面用。iPhone ホーム画面起動では隠す） */
+.sb{height:47px;padding:14px 26px 0 30px;display:flex;justify-content:space-between;align-items:flex-start;font-weight:600;font-size:16px;flex:none}
+.sb .r{display:flex;gap:6px;align-items:center}
+.sb svg{display:block}
+.sb.dark{color:#fff;background:var(--brand)}
+.tabbar.inv .on{color:var(--invest)}
+.tabbar.inv .on::before{background:var(--invest)}
+body.standalone-ios .sb{visibility:hidden}
+
+/* ===== 決済アプリ ===== */
+.pay-head{background:var(--brand);color:var(--brand-ink);padding:6px 20px 18px;flex:none}
+.pay-head .row{display:flex;justify-content:space-between;align-items:center}
+.logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:19px;letter-spacing:.02em}
+.logo i{width:28px;height:28px;border-radius:8px;background:#fff;display:grid;place-items:center}
+.logo i b{width:12px;height:12px;border-radius:50%;border:3.5px solid var(--brand)}
+.bal-label{font-size:13px;opacity:.9;margin-top:14px}
+.bal{font-size:40px;font-weight:800;margin-top:2px}
+.bal small{font-size:22px;margin-left:2px}
+.pt{font-size:13px;opacity:.95;margin-top:4px}
+.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;background:var(--card);margin:-1px 0 0;padding:16px 12px 18px;border-bottom:1px solid var(--line)}
+.act{display:flex;flex-direction:column;align-items:center;gap:7px;font-size:13px;font-weight:600}
+.act .ic{width:52px;height:52px;border-radius:16px;background:#fff0f2;display:grid;place-items:center;color:var(--brand)}
+.act.main .ic{background:var(--brand);color:#fff}
+.list{background:var(--card);margin-top:10px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.list h3{font-size:13px;color:var(--sub);font-weight:600;padding:14px 20px 6px}
+.li{display:flex;justify-content:space-between;align-items:center;padding:13px 20px;border-top:1px solid #f0f0f0;font-size:15px}
+.li span:last-child{font-weight:700}
+.li .m{color:var(--sub);font-size:12px;display:block;font-weight:400;margin-top:2px}
+.tabbar{flex:none;display:grid;grid-template-columns:repeat(5,1fr);background:#fff;border-top:1px solid var(--line);padding:8px 0 28px;font-size:10px;color:var(--sub);text-align:center}
+.tabbar div::before{content:"";display:block;width:22px;height:22px;border-radius:6px;background:#d9d9d9;margin:0 auto 4px}
+.tabbar .on{color:var(--brand)}
+.tabbar .on::before{background:var(--brand)}
+
+.topbar{flex:none;display:flex;align-items:center;justify-content:center;position:relative;height:48px;font-weight:700;font-size:17px;background:#fff;border-bottom:1px solid var(--line)}
+.topbar .back{position:absolute;left:16px;font-size:26px;font-weight:400;color:var(--ink)}
+.center{flex:1;display:flex;flex-direction:column;align-items:center;padding:28px 24px;background:#fff}
+.avatar{width:84px;height:84px;border-radius:50%;background:#e8d9c7;display:grid;place-items:center;font-size:34px;font-weight:700;color:#7a5a3a}
+.to{margin-top:12px;font-size:17px;font-weight:700}
+.to small{display:block;text-align:center;font-weight:400;color:var(--sub);font-size:13px;margin-top:2px}
+.amount{margin-top:26px;font-size:54px;font-weight:800}
+.amount small{font-size:28px;margin-left:4px}
+.msg{margin-top:22px;width:100%;border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:15px;color:var(--ink);background:#fafafa}
+.cta{margin-top:auto;width:100%;height:60px;border-radius:30px;background:var(--brand);color:#fff;font-size:20px;font-weight:800;border:none;font-family:var(--font)}
+.cta:active{filter:brightness(.92)}
+.store{font-size:22px;font-weight:800;margin-top:14px}
+.store-ic{width:72px;height:72px;border-radius:18px;background:#2b2b2b;color:#fff;display:grid;place-items:center;font-size:26px;font-weight:800}
+.kv{width:100%;margin-top:22px;border-top:1px solid var(--line)}
+.kv div{display:flex;justify-content:space-between;padding:12px 2px;border-bottom:1px solid var(--line);font-size:15px}
+.kv b{font-weight:700}
+
+/* 処理中・結果 */
+.result{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;padding:24px;text-align:center}
+.spin{width:64px;height:64px;border-radius:50%;border:6px solid #eee;border-top-color:var(--brand);animation:sp 0.8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.result .t{font-size:24px;font-weight:800;margin-top:22px;line-height:1.4}
+.result .s{font-size:15px;color:var(--sub);margin-top:10px;line-height:1.6}
+.big-ok{width:120px;height:120px;border-radius:50%;background:var(--brand);display:grid;place-items:center;animation:pop .35s ease-out}
+.big-ok svg{width:64px;height:64px}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+.result .amt{font-size:46px;font-weight:800;margin-top:8px}
+.result .amt small{font-size:24px}
+.result .pts{margin-top:8px;font-size:15px;color:var(--brand);font-weight:700}
+.result .meta{margin-top:18px;font-size:13px;color:var(--sub);line-height:1.7}
+.big-err{width:120px;height:120px;border-radius:50%;background:#fff1f1;border:4px solid var(--err);display:grid;place-items:center;color:var(--err);font-size:68px;font-weight:900}
+.retry{margin-top:34px;width:100%;height:56px;border-radius:28px;border:2px solid var(--ink);background:#fff;font-size:18px;font-weight:700;font-family:var(--font)}
+.cancel-banner{position:absolute;left:14px;right:14px;top:58px;background:#fff;border:2px solid var(--err);border-radius:16px;padding:16px 18px;box-shadow:0 10px 30px rgba(0,0,0,.18);display:none;text-align:left}
+.cancel-banner b{color:var(--err);font-size:18px;display:block}
+.cancel-banner span{font-size:14px;color:var(--ink);display:block;margin-top:6px;line-height:1.5}
+.cancel-banner.on{display:block;animation:drop .35s ease-out}
+
+/* 通知バナー */
+.notif{position:absolute;left:10px;right:10px;top:-140px;background:rgba(245,245,247,.97);border-radius:22px;padding:14px 16px;display:flex;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,.22);transition:top .45s cubic-bezier(.2,.9,.3,1.1);z-index:5}
+.notif.on{top:52px}
+.notif .ap{width:42px;height:42px;border-radius:10px;background:#111;color:#c6ff3d;display:grid;place-items:center;font-weight:900;font-size:20px;flex:none}
+.notif .h{display:flex;justify-content:space-between;font-size:13px;color:#555}
+.notif .h b{color:#111;font-size:14px}
+.notif .b{font-size:15px;margin-top:3px;line-height:1.4;color:#111}
+@keyframes drop{from{transform:translateY(-30px);opacity:0}to{transform:none;opacity:1}}
+
+/* ===== 投資アプリ ===== */
+.inv-head{background:#fff;padding:10px 20px 6px;flex:none;display:flex;justify-content:space-between;align-items:center}
+.inv-logo{font-weight:800;font-size:18px;color:var(--invest)}
+.inv-card{background:#fff;padding:18px 20px 20px}
+.inv-card .l{font-size:14px;color:var(--sub)}
+.inv-card .v{font-size:44px;font-weight:800;margin-top:4px}
+.inv-card .v small{font-size:24px;margin-left:2px}
+.gain{margin-top:6px;font-size:18px;font-weight:700;color:var(--err)}
+.gain small{font-size:14px;color:var(--sub);font-weight:400;margin-right:6px}
+.chart{margin-top:14px}
+.range{display:flex;gap:6px;margin-top:8px}
+.range span{flex:1;text-align:center;font-size:12px;padding:6px 0;border-radius:14px;background:#f1f3f3;color:var(--sub)}
+.range .on{background:var(--invest);color:#fff}
+.hold{background:#fff;margin-top:10px}
+.hold h3{font-size:14px;color:var(--sub);font-weight:600;padding:14px 20px 4px}
+.hold .li .tag{font-size:11px;color:#fff;background:var(--invest);border-radius:4px;padding:2px 6px;margin-right:6px;font-weight:700}
+.up{color:var(--err)}
+
+/* ===== 家計（ヨシノ） ===== */
+.kk-head{background:#fff;padding:12px 20px 16px;flex:none}
+.kk-head .t{font-size:20px;font-weight:800}
+.kk-sum{margin:12px 16px;background:#fff;border-radius:16px;padding:18px 20px}
+.kk-sum .l{font-size:14px;color:var(--sub)}
+.kk-sum .v{font-size:38px;font-weight:800;margin-top:4px}
+.kk-sum .n{font-size:14px;margin-top:4px;color:#2563eb;font-weight:700}
+.sub-item{display:flex;align-items:center;gap:14px;background:#fff;margin:0 16px 10px;border-radius:14px;padding:14px 16px}
+.sub-item .ic{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;color:#fff;font-weight:900;font-size:18px;flex:none}
+.sub-item .nm{flex:1;font-size:16px;font-weight:700}
+.sub-item .nm small{display:block;font-size:12px;color:var(--sub);font-weight:400;margin-top:2px}
+.sub-item .pr{font-size:17px;font-weight:800}
+
+/* ===== ニュース ===== */
+.news-head{background:#fff;flex:none;padding:6px 18px 10px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+.news-head .nm{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-weight:800;font-size:20px;letter-spacing:.04em}
+.article{background:#fff;padding:18px 20px 40px}
+.article .cat{font-size:12px;color:#b45309;font-weight:700}
+.article h1{font-size:25px;line-height:1.45;margin-top:8px;font-weight:800}
+.article .date{font-size:12px;color:var(--sub);margin-top:10px}
+.article .ph{margin-top:16px;height:200px;border-radius:6px;background:linear-gradient(160deg,#cfd8dc,#90a4ae);position:relative;overflow:hidden}
+.article .ph::after{content:"";position:absolute;left:18%;bottom:0;width:64%;height:62%;background:radial-gradient(circle at 50% 28%,#eceff1 0 16%,transparent 17%),linear-gradient(#78909c,#78909c) 50% 100%/58% 52% no-repeat;border-radius:50% 50% 0 0/30% 30% 0 0;opacity:.85}
+.article p{font-size:16px;line-height:1.85;margin-top:16px}
+.cmp{margin-top:20px;border:2px solid #1f2937;border-radius:10px;overflow:hidden}
+.cmp .h{background:#1f2937;color:#fff;font-weight:800;font-size:16px;padding:10px 14px}
+.cmp table{width:100%;border-collapse:collapse;font-size:15px}
+.cmp th,.cmp td{border-top:1px solid #e5e7eb;padding:10px 8px;text-align:center}
+.cmp th{background:#f9fafb;font-weight:700}
+.cmp td:first-child{font-weight:700;text-align:left;padding-left:12px;background:#f9fafb}
+
+/* ===== 通販 ===== */
+.shop-head{background:#fff;flex:none;display:flex;justify-content:space-between;align-items:center;padding:6px 18px 10px;border-bottom:1px solid var(--line)}
+.shop-head .nm{font-weight:300;letter-spacing:.32em;font-size:17px}
+.bag-ph{background:#efe9e2;height:430px;display:grid;place-items:center;position:relative}
+.bag{width:230px;height:190px;background:linear-gradient(160deg,#8a5a3b,#5d3a24);border-radius:20px 20px 26px 26px;position:relative;box-shadow:0 22px 34px rgba(60,35,20,.35);margin-top:60px}
+.bag::before{content:"";position:absolute;left:50%;top:-74px;transform:translateX(-50%);width:120px;height:100px;border:12px solid #6b4229;border-bottom:none;border-radius:60px 60px 0 0}
+.bag::after{content:"";position:absolute;left:50%;top:44px;transform:translateX(-50%);width:44px;height:30px;background:#d6b46a;border-radius:6px}
+.ribbon{position:absolute;left:14px;top:14px;background:#b91c1c;color:#fff;font-weight:800;font-size:13px;padding:6px 12px;border-radius:4px}
+.dots{position:absolute;bottom:14px;display:flex;gap:6px}
+.dots i{width:7px;height:7px;border-radius:50%;background:#c9bfb4}.dots i:first-child{background:#5d3a24}
+.prod{background:#fff;padding:18px 20px 24px}
+.prod .br{font-size:13px;letter-spacing:.2em;color:var(--sub)}
+.prod .t{font-size:20px;font-weight:700;margin-top:6px}
+.prod .p{font-size:30px;font-weight:800;margin-top:10px}
+.prod .p small{font-size:14px;color:var(--sub);font-weight:400;margin-left:6px}
+.prod .cart{margin-top:18px;height:56px;border-radius:6px;background:#1f1f1f;color:#fff;display:grid;place-items:center;font-size:18px;font-weight:700}
+.prod .gift{margin-top:10px;font-size:14px;color:#b91c1c;font-weight:700}
+
+/* ===== 隠しメニュー ===== */
+#hot{position:fixed;left:0;top:0;width:70px;height:70px;z-index:50}
+#menu{position:fixed;inset:0;background:rgba(10,10,10,.92);z-index:60;display:none;color:#fff;padding:54px 18px 24px;overflow:auto}
+#menu.on{display:block}
+#menu h2{font-size:15px;color:#aaa;font-weight:600;margin:16px 4px 8px}
+#menu button{display:flex;justify-content:space-between;width:100%;text-align:left;font-family:var(--font);font-size:18px;font-weight:700;background:#222;color:#fff;border:none;border-radius:12px;padding:16px;margin-bottom:8px}
+#menu button small{font-size:13px;color:#aaa;font-weight:400}
+#menu .seg{display:flex;gap:6px;flex-wrap:wrap}
+#menu .seg button{width:auto;flex:1;font-size:15px;padding:12px 10px;justify-content:center}
+#menu .seg button.sel{background:#fff;color:#111}
+#menu .close{background:#444;justify-content:center}
+#fsbtn{position:fixed;inset:0;z-index:70;background:#000;color:#fff;display:none;align-items:center;justify-content:center;font-size:20px;font-family:var(--font)}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ========== K1 投資アプリ（居③） ========== -->
+<section class="screen" data-id="K1" data-time="night">
+  <div class="sb" data-sb></div>
+  <div class="inv-head"><span class="inv-logo" data-name="invest"></span><span style="font-size:22px;color:#9ca3af">≡</span></div>
+  <div class="body">
+    <div class="inv-card">
+      <div class="l">資産合計</div>
+      <div class="v num" data-v="investTotal"></div>
+      <div class="gain num"><small>評価損益</small><span data-v="investGain"></span></div>
+      <svg class="chart" viewBox="0 0 350 130" width="100%" height="130" preserveAspectRatio="none">
+        <defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#0f766e" stop-opacity=".28"/><stop offset="1" stop-color="#0f766e" stop-opacity="0"/></linearGradient></defs>
+        <path d="M0,112 L25,108 50,110 75,100 100,104 125,92 150,95 175,84 200,86 225,72 250,76 275,60 300,54 325,40 350,30 L350,130 0,130Z" fill="url(#g)"/>
+        <path d="M0,112 L25,108 50,110 75,100 100,104 125,92 150,95 175,84 200,86 225,72 250,76 275,60 300,54 325,40 350,30" fill="none" stroke="#0f766e" stroke-width="3" stroke-linejoin="round"/>
+      </svg>
+      <div class="range"><span>1か月</span><span>3か月</span><span class="on">1年</span><span>3年</span><span>全期間</span></div>
+    </div>
+    <div class="hold">
+      <h3>保有中</h3>
+      <div class="li"><span><span class="tag">NISA</span>全世界株式インデックス<span class="m">積立 毎月 30,000円</span></span><span class="num up" data-v="hold1"></span></div>
+      <div class="li"><span><span class="tag">NISA</span>米国株式インデックス<span class="m">積立 毎月 10,000円</span></span><span class="num up" data-v="hold2"></span></div>
+      <div class="li"><span>国内株式（個別）<span class="m">2銘柄</span></span><span class="num up" data-v="hold3"></span></div>
+    </div>
+  </div>
+  <div class="tabbar inv"><div class="on">ホーム</div><div>投資信託</div><div>NISA</div><div>積立</div><div>メニュー</div></div>
+</section>
+
+<!-- ========== P1/P2 送金（居①） ========== -->
+<section class="screen" data-id="P1" data-time="night">
+  <div class="sb" data-sb></div>
+  <div class="topbar"><span class="back">‹</span>送る</div>
+  <div class="center">
+    <div class="avatar">西</div>
+    <div class="to" data-name="sendTo"></div>
+    <div class="amount num" data-v="sendAmount"></div>
+    <div class="msg">割り勘分です。ごちそうさまでした！</div>
+    <button class="cta" data-go="P2">送る</button>
+  </div>
+</section>
+<section class="screen" data-id="P2" data-time="night">
+  <div class="sb" data-sb></div>
+  <div class="result">
+    <div class="big-ok"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+    <div class="t">送りました</div>
+    <div class="amt num" data-v="sendAmount"></div>
+    <div class="meta"><span data-name="sendToShort"></span> さんへ<br><span data-v="dateNight"></span></div>
+  </div>
+</section>
+
+<!-- ========== Q 支払い（居④） ========== -->
+<section class="screen" data-id="Q1" data-time="night">
+  <div class="sb dark" data-sb></div>
+  <div class="pay-head">
+    <div class="row"><span class="logo"><i><b></b></i><span data-name="pay"></span></span><span style="font-size:22px">⚙︎</span></div>
+    <div class="bal-label">残高</div>
+    <div class="bal num" data-v="balanceQ"></div>
+    <div class="pt num">ポイント <span data-v="pointQ"></span>　今月の還元 <span data-v="backQ"></span></div>
+  </div>
+  <div class="actions">
+    <div class="act main" data-go="Q2"><span class="ic">${ICON_PAY}</span>支払う</div>
+    <div class="act"><span class="ic">${ICON_SCAN}</span>スキャン</div>
+    <div class="act"><span class="ic">${ICON_SEND}</span>送る</div>
+    <div class="act"><span class="ic">${ICON_ADD}</span>チャージ</div>
+  </div>
+  <div class="body">
+    <div class="list"><h3>最近の取引</h3>
+      <div class="li"><span>コンビニ<span class="m">11/18 12:04</span></span><span class="num">−¥538</span></div>
+      <div class="li"><span>カフェ<span class="m">11/17 15:22</span></span><span class="num">−¥690</span></div>
+      <div class="li"><span>ポイント還元<span class="m">11/15</span></span><span class="num" style="color:var(--brand)">+82pt</span></div>
+    </div>
+  </div>
+  <div class="tabbar"><div class="on">ホーム</div><div>お得</div><div>支払う</div><div>履歴</div><div>アカウント</div></div>
+</section>
+<section class="screen" data-id="Q2" data-time="night">
+  <div class="sb" data-sb></div>
+  <div class="topbar"><span class="back">‹</span>お支払い</div>
+  <div class="center">
+    <div class="store-ic">酒</div>
+    <div class="store" data-name="store"></div>
+    <div class="amount num" data-v="billAmount"></div>
+    <div class="kv">
+      <div><span>支払い方法</span><b>残高</b></div>
+      <div><span>付与予定ポイント</span><b class="num" data-v="billPoint"></b></div>
+    </div>
+    <button class="cta" data-pay>支払う</button>
+  </div>
+</section>
+<section class="screen" data-id="Q3" data-time="night">
+  <div class="sb" data-sb></div>
+  <div class="result"><div class="spin"></div><div class="t">お支払い処理中</div><div class="s">画面を閉じずにお待ちください</div></div>
+</section>
+<section class="screen" data-id="Q4a" data-time="night">
+  <div class="sb" data-sb></div>
+  <div class="result">
+    <div class="big-ok"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+    <div class="t">お支払いが完了しました</div>
+    <div class="amt num" data-v="billAmount"></div>
+    <div class="pts num"><span data-v="billPoint"></span> 獲得予定</div>
+    <div class="meta"><span data-name="store"></span><br><span data-v="dateNight"></span></div>
+  </div>
+  <div class="cancel-banner" id="cancel"><b>お支払いが取り消されました</b><span>お店の端末と通信できませんでした。お支払いは完了していません。</span></div>
+</section>
+<section class="screen" data-id="Q4b" data-time="night">
+  <div class="sb" data-sb></div>
+  <div class="result">
+    <div class="big-err">!</div>
+    <div class="t">お支払いできませんでした</div>
+    <div class="s">お店の端末と通信できませんでした。<br>お支払いは完了していません。</div>
+    <button class="retry">もう一度試す</button>
+  </div>
+</section>
+
+<!-- ========== F 残高＋通知（カ①） ========== -->
+<section class="screen" data-id="F1" data-time="day">
+  <div class="sb dark" data-sb></div>
+  <div class="pay-head">
+    <div class="row"><span class="logo"><i><b></b></i><span data-name="pay"></span></span><span style="font-size:22px">⚙︎</span></div>
+    <div class="bal-label">残高</div>
+    <div class="bal num" data-v="balanceF"></div>
+    <div class="pt num">ポイント <span data-v="pointF"></span></div>
+  </div>
+  <div class="actions">
+    <div class="act main"><span class="ic">${ICON_PAY}</span>支払う</div>
+    <div class="act"><span class="ic">${ICON_SCAN}</span>スキャン</div>
+    <div class="act"><span class="ic">${ICON_SEND}</span>送る</div>
+    <div class="act"><span class="ic">${ICON_ADD}</span>チャージ</div>
+  </div>
+  <div class="body">
+    <div class="list"><h3>今月の支払い</h3>
+      <div class="li"><span>動画配信（3件）<span class="m">定期支払い</span></span><span class="num">−¥3,470</span></div>
+      <div class="li"><span>マンガ読み放題<span class="m">定期支払い</span></span><span class="num">−¥990</span></div>
+      <div class="li"><span>雑誌読み放題<span class="m">定期支払い</span></span><span class="num">−¥580</span></div>
+      <div class="li"><span>美容ボックス<span class="m">定期支払い</span></span><span class="num">−¥2,200</span></div>
+    </div>
+  </div>
+  <div class="tabbar"><div class="on">ホーム</div><div>お得</div><div>支払う</div><div>履歴</div><div>アカウント</div></div>
+  <div class="notif" id="notif" data-notif>
+    <div class="ap">F</div>
+    <div style="flex:1"><div class="h"><b data-name="fit"></b><span>今</span></div>
+      <div class="b">無料期間が終了しました。プレミアムプラン <span class="num" data-v="fitPrice"></span> のお支払いが完了しました</div></div>
+  </div>
+</section>
+
+<!-- ========== Y1 ヨシノのサブスク（カ① 2台目） ========== -->
+<section class="screen" data-id="Y1" data-time="day">
+  <div class="sb" data-sb></div>
+  <div class="kk-head"><div class="t">固定費</div></div>
+  <div class="body">
+    <div class="kk-sum"><div class="l">サブスク 月額合計</div><div class="v num" data-v="yoshinoTotal"></div><div class="n">2件 ・ 先月と同じ</div></div>
+    <div class="sub-item"><div class="ic" style="background:#1d4ed8">▶</div><div class="nm" data-name="video"></div><div class="pr num" data-v="videoPrice"></div></div>
+    <div class="sub-item"><div class="ic" style="background:#7c3aed">♪</div><div class="nm" data-name="music"></div><div class="pr num" data-v="musicPrice"></div></div>
+  </div>
+</section>
+
+<!-- ========== N1 ニュース（カ②） ========== -->
+<section class="screen" data-id="N1" data-time="day">
+  <div class="sb" data-sb></div>
+  <div class="news-head"><span style="font-size:24px">‹</span><span class="nm" data-name="news"></span></div>
+  <div class="body">
+    <div class="article">
+      <div class="cat">マネー</div>
+      <h1>老後のお金、足りる？ 「自分は大丈夫」と思う人ほど危ない理由</h1>
+      <div class="date">2026年11月18日 7:00</div>
+      <div class="ph"></div>
+      <p>物価の上昇が続くなか、老後の生活費への不安を感じる人が増えている。将来に向けて何から始めればよいのか。</p>
+      <div class="cmp">
+        <div class="h">NISA と iDeCo のちがい</div>
+        <table><tr><th></th><th>NISA</th><th>iDeCo</th></tr>
+          <tr><td>引き出し</td><td>いつでも</td><td>原則60歳まで不可</td></tr>
+          <tr><td>税金</td><td>運用益が非課税</td><td>掛金が所得控除</td></tr>
+          <tr><td>向いている人</td><td>自由度重視</td><td>強制力重視</td></tr></table>
+      </div>
+      <p>どちらにもメリットがあり、目的に合わせて選ぶのが大切だ。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== E1 バッグ（カ③） ========== -->
+<section class="screen" data-id="E1" data-time="day">
+  <div class="sb" data-sb></div>
+  <div class="shop-head"><span style="font-size:24px">‹</span><span class="nm" data-name="brand"></span><span style="font-size:20px">♡</span></div>
+  <div class="body">
+    <div class="bag-ph"><span class="ribbon">クリスマスギフト</span><div class="bag"></div><div class="dots"><i></i><i></i><i></i><i></i></div></div>
+    <div class="prod">
+      <div class="br" data-name="brand"></div>
+      <div class="t">レザー ハンドバッグ ミディアム</div>
+      <div class="p num" data-v="bagPrice"></div>
+      <div class="gift">ギフトラッピング無料 ・ 12/24 までにお届け</div>
+      <div class="cart">カートに入れる</div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<div id="hot"></div>
+<div id="menu">
+  <h2>本を選ぶ（撮る順）</h2>
+  <button data-open="K1">居③ 投資アプリ<small>K1</small></button>
+  <button data-open="P1">居① 送金 → 送りました<small>P1</small></button>
+  <button data-open="Q1">居④ 支払い<small>Q1</small></button>
+  <div class="seg" id="mode"><button data-mode="ok">完了</button><button data-mode="fail">失敗</button><button data-mode="cancel">完了→取消</button></div>
+  <button data-open="F1">カ① 残高＋通知<small>F1・右上タップで通知</small></button>
+  <button data-open="Y1">カ① ヨシノのサブスク（2台目）<small>Y1</small></button>
+  <button data-open="N1">カ② ニュース記事<small>N1</small></button>
+  <button data-open="E1">カ③ バッグ<small>E1</small></button>
+  <h2>決済アプリの色</h2>
+  <div class="seg" id="theme"></div>
+  <h2>&nbsp;</h2>
+  <button class="close" id="close">閉じる</button>
+</div>
+<div id="fsbtn">タップで全画面</div>
+
+<script>
+/* ★＝仮。ユーザー確認後に書き換える */
+const CONFIG = {
+  names: {
+    pay: 'ポチペイ',                 // ★架空の決済アプリ
+    invest: 'つみたてノート',        // ★架空の投資アプリ
+    sendTo: '西山 先輩',             // 送金相手
+    sendToShort: '西山',
+    store: '大衆酒場 ひのき',        // ★架空の店名
+    fit: 'FitLoop',                  // ★架空の筋トレアプリ
+    video: 'ミルフル',               // ★架空の動画配信
+    music: 'オトノハ',               // ★架空の音楽配信
+    news: 'マネー新報',              // ★架空のニュース
+    brand: 'MAISON ORNE',            // ★架空のブランド
+  },
+  values: {
+    investTotal: '¥486,320', investGain: '+¥38,120（+8.5%）',
+    hold1: '+¥24,800', hold2: '+¥9,960', hold3: '+¥3,360',
+    sendAmount: '¥3,500',            // ★居①：3,500円と「1円単位」の矛盾
+    balanceQ: '¥24,580', pointQ: '1,284pt', backQ: '+312pt',
+    billAmount: '¥7,260', billPoint: '72pt',
+    balanceF: '¥842', pointF: '36pt', fitPrice: '¥1,480',
+    yoshinoTotal: '¥2,460', videoPrice: '¥1,490', musicPrice: '¥970',
+    bagPrice: '¥64,900',
+    dateNight: '2026年11月18日 21:48',
+  },
+  time: { night: '21:48', day: '15:24' },  // 偽ステータスバーの時刻
+  themes: [ ['クリムゾン', '#DC143C'], ['明るい赤', '#FF2D3B'], ['朱', '#F2552C'], ['青', '#1F6FEB'] ],
+};
+
+const ICON = {
+  PAY: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></svg>',
+  SCAN: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 8V5a1 1 0 011-1h3M16 4h3a1 1 0 011 1v3M20 16v3a1 1 0 01-1 1h-3M8 20H5a1 1 0 01-1-1v-3M4 12h16"/></svg>',
+  SEND: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 12h14M13 6l6 6-6 6"/></svg>',
+  ADD: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M8 12h8"/></svg>',
+};
+document.querySelectorAll('.ic').forEach(el => {
+  const m = el.innerHTML.match(/\$\{ICON_(\w+)\}/); if (m) el.innerHTML = ICON[m[1]];
+});
+const SB = t => `<span class="num">${t}</span><span class="r">
+  <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+  <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.2c2.4 0 4.6.9 6.3 2.5l1.2-1.3A10.6 10.6 0 008 .4C5.1.4 2.5 1.5.5 3.4l1.2 1.3A8.8 8.8 0 018 2.2zm0 3.6c1.4 0 2.7.5 3.7 1.4l1.2-1.3A7.2 7.2 0 008 4c-1.9 0-3.6.7-4.9 1.9l1.2 1.3c1-.9 2.3-1.4 3.7-1.4zM8 9.4l-2.2-2a3.3 3.3 0 014.4 0z"/></svg>
+  <svg width="27" height="13" viewBox="0 0 27 13" fill="none"><rect x=".5" y=".5" width="23" height="12" rx="3.5" stroke="currentColor" opacity=".45"/><rect x="2.2" y="2.2" width="17" height="8.6" rx="2" fill="currentColor"/><rect x="24.6" y="4.2" width="1.8" height="4.6" rx=".9" fill="currentColor" opacity=".45"/></svg></span>`;
+
+function fill() {
+  document.querySelectorAll('[data-name]').forEach(e => e.textContent = CONFIG.names[e.dataset.name] ?? '');
+  document.querySelectorAll('[data-v]').forEach(e => {
+    const v = CONFIG.values[e.dataset.v] ?? ''; const m = v.match(/^(¥)([\d,]+)$/);
+    e.innerHTML = m && e.classList.contains('amount') || m && e.classList.contains('amt') || m && e.classList.contains('bal') ? `${m[2]}<small>円</small>` : v;
+  });
+  document.querySelectorAll('.screen').forEach(s => {
+    const sb = s.querySelector('[data-sb]'); if (sb) sb.innerHTML = SB(CONFIG.time[s.dataset.time] || CONFIG.time.day);
+  });
+}
+
+const store = { get(k, d) { try { return localStorage.getItem(k) ?? d } catch (e) { return d } },
+                set(k, v) { try { localStorage.setItem(k, v) } catch (e) {} } };
+let mode = store.get('mode', 'ok');
+function setTheme(hex) { document.documentElement.style.setProperty('--brand', hex); store.set('theme', hex); renderSeg(); }
+function renderSeg() {
+  const cur = getComputedStyle(document.documentElement).getPropertyValue('--brand').trim();
+  document.getElementById('theme').innerHTML = CONFIG.themes.map(([n, h]) =>
+    `<button data-theme="${h}" class="${cur.toLowerCase() === h.toLowerCase() ? 'sel' : ''}" style="border-bottom:4px solid ${h}">${n}</button>`).join('');
+  document.querySelectorAll('#mode button').forEach(b => b.classList.toggle('sel', b.dataset.mode === mode));
+}
+
+let current = null, timers = [];
+function show(id) {
+  timers.forEach(clearTimeout); timers = [];
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.dataset.id === id));
+  current = id;
+  const n = document.getElementById('notif'); n.classList.remove('on');
+  document.getElementById('cancel').classList.remove('on');
+  document.querySelector('meta[name=theme-color]').content = ['Q1', 'F1'].includes(id) ? getComputedStyle(document.documentElement).getPropertyValue('--brand').trim() : '#ffffff';
+  const sc = document.querySelector('.screen.on .body'); if (sc) sc.scrollTop = 0;
+}
+
+document.addEventListener('click', e => {
+  const go = e.target.closest('[data-go]'); if (go) { show(go.dataset.go); return; }
+  if (e.target.closest('[data-pay]')) {
+    show('Q3');
+    timers.push(setTimeout(() => {
+      if (mode === 'fail') show('Q4b');
+      else { show('Q4a'); if (mode === 'cancel') timers.push(setTimeout(() => document.getElementById('cancel').classList.add('on'), 2600)); }
+    }, 1300));
+    return;
+  }
+  const op = e.target.closest('[data-open]'); if (op) { menu(false); show(op.dataset.open); return; }
+  const md = e.target.closest('[data-mode]'); if (md) { mode = md.dataset.mode; store.set('mode', mode); renderSeg(); return; }
+  const th = e.target.closest('[data-theme]'); if (th) { setTheme(th.dataset.theme); return; }
+  if (e.target.id === 'close') { menu(false); return; }
+  // カ①：右上をタップで通知
+  if (current === 'F1') { const t = e.touches ? e.touches[0] : e; if (t.clientX > innerWidth - 90 && t.clientY < 140) document.getElementById('notif').classList.add('on'); }
+  // 居④（完了→取消）：右上タップでも取消を出せる
+  if (current === 'Q4a') { const t = e; if (t.clientX > innerWidth - 90 && t.clientY < 140) document.getElementById('cancel').classList.add('on'); }
+});
+
+// 左上長押し → メニュー
+let lp = null;
+const hot = document.getElementById('hot');
+const start = () => { lp = setTimeout(() => menu(true), 700); };
+const stop = () => clearTimeout(lp);
+hot.addEventListener('touchstart', start, { passive: true }); hot.addEventListener('touchend', stop); hot.addEventListener('touchmove', stop);
+hot.addEventListener('mousedown', start); hot.addEventListener('mouseup', stop);
+function menu(on) { document.getElementById('menu').classList.toggle('on', on); renderSeg(); }
+
+// iPhone のホーム画面から起動 → 本物のステータスバーが出るので偽物を隠す
+const iosStandalone = window.navigator.standalone === true;
+if (iosStandalone) document.body.classList.add('standalone-ios');
+
+// Android 等：最初のタップで全画面
+const params = new URLSearchParams(location.search);
+const exportMode = params.has('s');
+if (!exportMode && !iosStandalone && document.documentElement.requestFullscreen && !matchMedia('(display-mode: fullscreen)').matches) {
+  const fb = document.getElementById('fsbtn'); fb.style.display = 'flex';
+  fb.addEventListener('click', () => { document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {}); fb.style.display = 'none'; });
+}
+// 画面を消さない
+async function wake() { try { await navigator.wakeLock?.request('screen') } catch (e) {} }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') wake(); }); wake();
+
+// 書き出し用：?s=ID&theme=#hex
+fill();
+const t0 = params.get('theme') || store.get('theme', null);
+if (t0) document.documentElement.style.setProperty('--brand', t0);
+const sid = params.get('s');
+if (sid === 'F2') { show('F1'); document.getElementById('notif').classList.add('on'); }
+else if (sid === 'Q5') { show('Q4a'); document.getElementById('cancel').classList.add('on'); }
+else show(sid || store.get('last', 'K1'));
+document.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => store.set('last', b.dataset.open)));
+if (exportMode) { document.getElementById('hot').remove(); document.querySelectorAll('.notif,.cancel-banner,.big-ok').forEach(e => e.style.animation = 'none'); document.getElementById('notif').style.transition = 'none'; }
+
+// オフライン：HTTPS で置いたときだけ Service Worker
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
