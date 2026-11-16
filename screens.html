@@ -185,7 +185,7 @@ html,body{touch-action:manipulation}
 .prod .gift{margin-top:10px;font-size:14px;color:#b91c1c;font-weight:700}
 
 /* ===== 隠しメニュー ===== */
-#hot{position:fixed;left:0;top:0;width:70px;height:70px;z-index:50}
+#hot{position:fixed;left:0;top:0;width:90px;height:90px;z-index:50;touch-action:none}
 #menu{position:fixed;inset:0;background:rgba(10,10,10,.92);z-index:60;display:none;color:#fff;padding:54px 18px 24px;overflow:auto}
 #menu.on{display:block}
 #menu h2{font-size:15px;color:#aaa;font-weight:600;margin:16px 4px 8px}
@@ -396,7 +396,7 @@ html,body{touch-action:manipulation}
 
 <div id="hot"></div>
 <div id="menu">
-  <h2>本を選ぶ（撮る順）　※メニュー＝2本指タップ</h2>
+  <h2>本を選ぶ（撮る順）　※メニュー＝2本指タップ　<span style="color:#fff">v3</span></h2>
   <button data-open="K1">居③ 投資アプリ<small>K1</small></button>
   <button data-open="P1">居① 送金 → 送りました<small>P1</small></button>
   <button data-open="Q1">居④ 支払い<small>Q1</small></button>
@@ -524,11 +524,12 @@ hot.addEventListener('pointerdown', e => {
 ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => hot.addEventListener(ev, () => clearTimeout(lp)));
 hot.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('touchstart', e => {
-  if (e.touches.length === 2) { two = { t: Date.now(), x: e.touches[0].clientX, y: e.touches[0].clientY }; e.preventDefault(); }
+  if (e.touches.length >= 2) { two = Date.now(); e.preventDefault(); }
 }, { passive: false });
 document.addEventListener('touchend', e => {
-  if (two && e.touches.length === 0) { if (Date.now() - two.t < 500 && !menuOpen()) menu(true); two = null; }
-});
+  if (two && Date.now() - two < 800 && !menuOpen()) menu(true);
+  if (e.touches.length === 0) two = null; else two = null;
+}, { passive: false });
 document.addEventListener('gesturestart', e => e.preventDefault());
 document.addEventListener('contextmenu', e => e.preventDefault());
 function menu(on) { document.getElementById('menu').classList.toggle('on', on); renderSeg(); }
