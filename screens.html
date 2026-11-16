@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="撮影画面">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#ffffff">
@@ -44,7 +44,10 @@ body{font-family:var(--font);color:var(--ink);-webkit-user-select:none;user-sele
 .sb.dark{color:#fff;background:var(--brand)}
 .tabbar.inv .on{color:var(--invest)}
 .tabbar.inv .on::before{background:var(--invest)}
-body.standalone-ios .sb{visibility:hidden}
+/* iPhone のホーム画面起動：本物のステータスバーの裏まで描く。偽の時計は消し、高さだけ合わせる */
+body.standalone-ios .sb{height:env(safe-area-inset-top,47px);padding:0;background:var(--sb-bg,#fff)}
+body.standalone-ios .sb>*{display:none}
+body.standalone-ios .sb.dark{background:var(--brand)}
 
 /* ===== 決済アプリ ===== */
 .pay-head{background:var(--brand);color:var(--brand-ink);padding:6px 20px 18px;flex:none}
@@ -396,7 +399,7 @@ html,body{touch-action:manipulation}
 
 <div id="hot"></div>
 <div id="menu">
-  <h2>本を選ぶ（撮る順）　※メニュー＝2本指タップ　<span style="color:#fff">v6</span></h2>
+  <h2>本を選ぶ（撮る順）　※メニュー＝2本指タップ　<span style="color:#fff">v7</span></h2>
   <button data-open="K1">居③ 投資アプリ<small>K1</small></button>
   <button data-open="P1">居① 送金 → 送りました<small>P1</small></button>
   <button data-open="Q1">居④ 支払い<small id="modeLabel">Q1</small></button>
